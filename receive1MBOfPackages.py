@@ -3,17 +3,12 @@ import time;
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Create a UDP socket
+
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
-# Allow the socket to reuse the address
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
-# Bind the socket to the port
 server_address = ('', 217)  # '' means it listens on all available interfaces
 sock.bind(server_address)
 
-#print("Listening for broadcast messages on port 217...")
 
 ##create numpy array to see the milliseconds between the messages
 package_latencies = []

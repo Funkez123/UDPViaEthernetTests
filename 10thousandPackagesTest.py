@@ -2,18 +2,11 @@ import socket
 import time;
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.stats import lognorm  # Import log-normal distribution
 from scipy.stats import gaussian_kde
 
-
-# Create a UDP socket
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
-# Allow the socket to reuse the address
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
-# Bind the socket to the port
-server_address = ('', 217)  # '' means it listens on all available interfaces
+server_address = ('', 217)  # '' means it listens on all available interfaces, port 217
 sock.bind(server_address)
 
 print("Listening for broadcast messages on port 217...")
@@ -30,9 +23,8 @@ try:
         ## get unix time the data was received
         current_unix_microseconds = round(time.time() * 1000000)
         current_microseconds = round(current_unix_microseconds - prev_microseconds)
-        # if(current_microseconds < 3000000):
         if(current_microseconds < 10000000):
-            if(current_microseconds == 0): # if there is "no time in between packages aka it's 0" we just a value to 1 microsecond, so that the gamma distribution will work again
+            if(current_microseconds == 0): # if there is "no time in between packages aka it's 0" we just a value to 1 microsecond, so that the KDE works again
                 package_latencies.append(1) 
             else:
                 package_latencies.append(current_microseconds)
@@ -64,31 +56,25 @@ finally:
 
     ax2 = ax1.twinx()  # Create a twin Axes sharing the same x-axis
 
-    # Fit a log-normal distribution to the filtered data
-    shape, loc, scale = lognorm.fit(package_latencies, floc=0)  # Fix location to 0
-    print(f"Log-normal fit: shape={shape:.2f}, scale={scale:.2f}")
-
-    # Generate the fitted PDF
+    # Perform Kernel Density Estimation on the data
+    kde = gaussian_kde(package_latencies, bw_method='scott')  # Adjust `bw_method` if needed
     x = np.linspace(min(package_latencies), max(package_latencies), 1000)
-    pdf = lognorm.pdf(x, shape, loc=loc, scale=scale)
+    kde_values = kde(x)
 
-    # Plot the PDF (right y-axis)
-    color_pdf = 'tab:red'
-    ax2.plot(x, pdf, color=color_pdf, lw=2, label=f"Log-normal Fit (shape={shape:.2f}, scale={scale:.2f})")
-    ax2.set_ylabel("Probability Density Function", color=color_pdf)
-    ax2.tick_params(axis='y', labelcolor=color_pdf)
+    color_kde = 'tab:red'
+    ax2.plot(x, kde_values, color=color_kde, lw=2, label="KDE Fit")
+    ax2.set_ylabel("Probability Density Function (KDE)", color=color_kde)
+    ax2.tick_params(axis='y', labelcolor=color_kde)
 
-    # Synchronize the y-axes at zero so that they're even
+    # Synchronize the y-axes at zero so that they're visually even
     ax2.set_ylim(0, ax2.get_ylim()[1])  
     ax1.set_ylim(0, ax1.get_ylim()[1])  
     
     plt.show()
 
-    # Add legends
     fig.tight_layout()
     fig.legend(loc="upper right", bbox_to_anchor=(1, 1), bbox_transform=ax1.transAxes)
-    plt.show() ## first plot histrogram and probability function
-
+    plt.show() 
 
     # Plot received values over time
     xaxis = np.linspace(1.0, len(received_values), len(received_values))
