@@ -1,3 +1,5 @@
+## This script opens a UDP Socket on Port 217 and listens for single Byte packages form the W5500 - FPGA 
+
 import socket
 import time;
 import numpy as np
@@ -14,8 +16,13 @@ print("Listening for broadcast messages on port 217...")
 ##create numpy array to see the milliseconds between the messages
 package_latencies = []
 received_values = []
-
 prev_microseconds = 0
+
+amount_of_lost_packages = 0
+amount_of_packages_with_wrong__payload_size = 0
+
+amount_of_packages_to_receive = 1000000
+
 try:
     while True:
         # Receive data
@@ -23,18 +30,31 @@ try:
         ## get unix time the data was received
         current_unix_microseconds = round(time.time() * 1000000)
         current_microseconds = round(current_unix_microseconds - prev_microseconds)
-        if(current_microseconds < 10000000):
+        if(current_microseconds < 10000000): # if something takes longer than 10 milliseconds, it's not part of the histogram
             if(current_microseconds == 0): # if there is "no time in between packages aka it's 0" we just a value to 1 microsecond, so that the KDE works again
                 package_latencies.append(1) 
             else:
                 package_latencies.append(current_microseconds)
         prev_microseconds = current_unix_microseconds
         print(f"Received {len(data)} bytes from {address}: {data.hex()}")
-        if(len(data) == 4) :
-            received_values.append(int(data.hex(),16))
-        else    :
-            received_values.append(0)
-        if len(package_latencies) == 10000:
+        if(len(data) == 1) :
+            current_received_int = int(data.hex(),16)
+            #Check if we've lost packages:
+            if(len(received_values)!=0):
+                if(received_values[-1] != (current_received_int - 1)) :    # received_values[-1] is the last value in the array
+                    if((received_values[-1] != 255 & current_received_int != 0)): # considering the regular jump from 255 to 0
+
+                        if(received_values[-1] > current_received_int): # if package loss happend in between the around the jump from 255 to 0, then the delta is counted differently
+                            amount_of_lost_packages = amount_of_lost_packages + ((255 - received_values[-1]) + current_received_int-1) # package loss is the distance to 255 + the current value's distance to 0 minus 1
+                        else:
+                            amount_of_lost_packages = amount_of_lost_packages + (current_received_int - received_values[-1]) #
+            
+            received_values.append(current_received_int)
+        else:
+            received_values.append(0) # instead of the received number, if the package isn't exactly one byte, something went wrong. In this case replace with "0"
+            amount_of_packages_with_wrong__payload_size += 1
+
+        if len(package_latencies) == amount_of_packages_to_receive:
             break
 
 
@@ -42,8 +62,8 @@ except KeyboardInterrupt:
     print("\nExiting...")
 finally:
     sock.close()
-    print(package_latencies)
-
+    print(f"Amount of lost packages: {amount_of_lost_packages}")
+    print(f"Amount of packages with wrong payload size: {amount_of_packages_with_wrong__payload_size}")
     ##plotting results
     
     # Create a figure
@@ -51,7 +71,7 @@ finally:
 
     ax1.hist(package_latencies, bins=100, density=True, alpha=0.7, color='blue')
     ax1.set_ylabel("Probability", color="blue")
-    ax1.set_xlabel("Package delay in microseconds (k=10000)")
+    ax1.set_xlabel(f"Package delay in microseconds (k={amount_of_packages_to_receive})")
     ax1.tick_params(axis='y', labelcolor="blue")
 
     ax2 = ax1.twinx()  # Create a twin Axes sharing the same x-axis
@@ -69,14 +89,12 @@ finally:
     # Synchronize the y-axes at zero so that they're visually even
     ax2.set_ylim(0, ax2.get_ylim()[1])  
     ax1.set_ylim(0, ax1.get_ylim()[1])  
-    
-    plt.show()
-
+    plt.grid()
     fig.tight_layout()
-    fig.legend(loc="upper right", bbox_to_anchor=(1, 1), bbox_transform=ax1.transAxes)
+    #fig.legend(loc="upper right", bbox_to_anchor=(1, 1), bbox_transform=ax1.transAxes)
     plt.show() 
 
-    # Plot received values over time
-    xaxis = np.linspace(1.0, len(received_values), len(received_values))
-    plt.plot(xaxis, received_values)
-    plt.show()
+    # # Plot received values over time
+    # xaxis = np.linspace(1.0, len(received_values), len(received_values))
+    # plt.plot(xaxis, received_values)
+    # plt.show()
