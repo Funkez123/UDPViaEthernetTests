@@ -19,9 +19,9 @@ received_values = []
 prev_microseconds = 0
 
 amount_of_lost_packages = 0
-amount_of_packages_with_wrong__payload_size = 0
+amount_of_packages_with_wrong_payload_size = 0
 
-amount_of_packages_to_receive = 1000000
+amount_of_packages_to_receive = 10000
 
 try:
     while True:
@@ -37,22 +37,20 @@ try:
                 package_latencies.append(current_microseconds)
         prev_microseconds = current_unix_microseconds
         print(f"Received {len(data)} bytes from {address}: {data.hex()}")
-        if(len(data) == 1) :
+        if(len(data) == 1):
             current_received_int = int(data.hex(),16)
             #Check if we've lost packages:
-            if(len(received_values)!=0):
-                if(received_values[-1] != (current_received_int - 1)) :    # received_values[-1] is the last value in the array
-                    if((received_values[-1] != 255 & current_received_int != 0)): # considering the regular jump from 255 to 0
-
-                        if(received_values[-1] > current_received_int): # if package loss happend in between the around the jump from 255 to 0, then the delta is counted differently
-                            amount_of_lost_packages = amount_of_lost_packages + ((255 - received_values[-1]) + current_received_int-1) # package loss is the distance to 255 + the current value's distance to 0 minus 1
-                        else:
-                            amount_of_lost_packages = amount_of_lost_packages + (current_received_int - received_values[-1]) #
-            
-            received_values.append(current_received_int)
+            if(len(received_values)==0): # we can't get a package delay for the first received value
+                received_values.append(current_received_int)
+            else:
+                last_received_value = received_values[-1] # received_values[-1] is the last value in the array
+                expected_value = (last_received_value + 1) % 256
+                if(current_received_int != expected_value) : #considering the jump at 255 -> 0
+                    amount_of_lost_packages += abs(current_received_int - expected_value) % 256
+                received_values.append(current_received_int)
         else:
             received_values.append(0) # instead of the received number, if the package isn't exactly one byte, something went wrong. In this case replace with "0"
-            amount_of_packages_with_wrong__payload_size += 1
+            amount_of_packages_with_wrong_payload_size += 1
 
         if len(package_latencies) == amount_of_packages_to_receive:
             break
@@ -63,7 +61,7 @@ except KeyboardInterrupt:
 finally:
     sock.close()
     print(f"Amount of lost packages: {amount_of_lost_packages}")
-    print(f"Amount of packages with wrong payload size: {amount_of_packages_with_wrong__payload_size}")
+    print(f"Amount of packages with wrong payload size: {amount_of_packages_with_wrong_payload_size}")
     ##plotting results
     
     # Create a figure
@@ -94,7 +92,7 @@ finally:
     #fig.legend(loc="upper right", bbox_to_anchor=(1, 1), bbox_transform=ax1.transAxes)
     plt.show() 
 
-    # # Plot received values over time
-    # xaxis = np.linspace(1.0, len(received_values), len(received_values))
-    # plt.plot(xaxis, received_values)
-    # plt.show()
+    # Plot received values over time
+    xaxis = np.linspace(1.0, len(received_values), len(received_values))
+    plt.plot(xaxis, received_values)
+    plt.show()
