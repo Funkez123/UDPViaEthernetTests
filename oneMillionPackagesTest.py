@@ -21,7 +21,7 @@ prev_microseconds = 0
 amount_of_lost_packages = 0
 amount_of_packages_with_wrong_payload_size = 0
 
-amount_of_packages_to_receive = 10000
+amount_of_packages_to_receive = 1000000
 
 try:
     while True:
