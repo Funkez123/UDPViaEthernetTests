@@ -12,7 +12,7 @@ NUM_PACKETS = 4096
 
 # Create a UDP socket
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-sock.settimeout(0.05)  # Set a timeout of 3 seconds
+sock.settimeout(0.1)  # Set a timeout of 100 milliseconds
 
 # Storage for round-trip times (RTTs)
 round_trip_times = []
