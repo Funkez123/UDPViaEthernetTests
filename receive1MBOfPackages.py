@@ -14,6 +14,8 @@ sock.bind(server_address)
 package_latencies = []
 received_values = []
 
+amount_of_packets_to_receive = 4096
+
 prev_unix_microseconds = 0
 try:
     while True:
@@ -32,7 +34,7 @@ try:
             package_latencies.append(current_microseconds) # package_latencies array contains microsecond times inbetween packages
         prev_unix_microseconds = current_unix_microseconds
         # print(f"Received {len(data)} bytes from {address}: {data.hex()}")
-        if len(package_latencies) == 4096:
+        if len(package_latencies) == amount_of_packets_to_receive:
             break # if 4096 packages of size 256 Bytes are received, we are done
 
 
@@ -44,12 +46,19 @@ finally:
     time_total = last_package_unix_microseconds - first_package_unix_time
     print(f"receiving 1 Megabyte of data 4096 * 256 Bytes took: {time_total/1000} milliseconds")
     
+    fig, ax1 = plt.subplots()
 
+    ax = plt.gca()
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
 
     sock.close()
-    plt.hist(package_latencies, bins=100, density=True, alpha=0.7, color='blue')
-    plt.ylabel("probability")
-    plt.xlabel("package delay in microseconds (k=4096)")
-    #plt.show()
+    plt.hist(package_latencies, bins=100, density=False, alpha=0.7, color='blue')
+    ax.set_yscale('log')
+    ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: f'{(y / amount_of_packets_to_receive) * 100:.1f}%'))
+    plt.grid()
+    #plt.ylabel("probability")
+    #plt.xlabel("package delay in microseconds (k=4096)")
+    plt.show()
 
     

@@ -67,9 +67,15 @@ finally:
     # Create a figure
     fig, ax1 = plt.subplots()
 
-    ax1.hist(package_latencies, bins=100, density=True, alpha=0.7, color='blue')
-    ax1.set_ylabel("Probability", color="blue")
-    ax1.set_xlabel(f"Package delay in microseconds (k={amount_of_packages_to_receive})")
+    ax = plt.gca()
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+
+    ax1.hist(package_latencies, bins=100, density=False, alpha=0.7, color='blue')
+    ax1.set_yscale('linear')
+    ax1.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: f'{(y / amount_of_packages_to_receive) * 100:.1f}%'))
+    #ax1.set_ylabel("Probability", color="blue")
+    #ax1.set_xlabel(f"Package delay in microseconds (k={amount_of_packages_to_receive})")
     ax1.tick_params(axis='y', labelcolor="blue")
 
     ax2 = ax1.twinx()  # Create a twin Axes sharing the same x-axis
@@ -81,7 +87,7 @@ finally:
 
     color_kde = 'tab:red'
     ax2.plot(x, kde_values, color=color_kde, lw=2, label="KDE Fit")
-    ax2.set_ylabel("Probability Density Function (KDE)", color=color_kde)
+    #ax2.set_ylabel("Probability Density Function (KDE)", color=color_kde)
     ax2.tick_params(axis='y', labelcolor=color_kde)
 
     # Synchronize the y-axes at zero so that they're visually even
