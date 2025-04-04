@@ -59,6 +59,6 @@ finally:
     plt.grid()
     #plt.ylabel("probability")
     #plt.xlabel("package delay in microseconds (k=4096)")
-    plt.show()
+    #plt.show()
 
     

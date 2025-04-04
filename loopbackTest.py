@@ -34,7 +34,7 @@ try:
             print("Packet timeout")
 
 except KeyboardInterrupt:
-    print("\nTest interrupted by user.")
+    print("\nTest interrupted")
 finally:
     sock.close()
     
