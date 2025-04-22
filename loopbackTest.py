@@ -17,7 +17,7 @@ sock.settimeout(0.1)  # Set a timeout of 100 milliseconds
 # Storage for round-trip times (RTTs)
 round_trip_times = []
 
-test_data = b"PING"  # 4-byte test message
+test_data = b"Ping"  # 4-byte test message
 
 sock.bind(("0.0.0.0", 217))  # Bind to all interfaces on port 217
 
